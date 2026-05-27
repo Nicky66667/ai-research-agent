@@ -5,9 +5,21 @@ from pathlib import Path # handle filesystem path handling
 from langchain_core.tools import tool
 from rag.pipeline import RAGPipeline
 
-# Share one RAGPipeline instance throughout the program lifecycle to avoid duplicate construction
-_rag = RAGPipeline()
+"""
+dataflow for arXiv API:
 
+-> Paper metadata + PDF URL
+    -> Download PDF binary via httpx
+      -> Write to a temporary file
+        -> RAGPipeline.add_pdf()
+          -> Parse / chunk / vectorize
+            -> Store in the vector database (_rag)
+              -> rag_query() retrieves relevant chunks
+                -> Return relevant chunks to the user
+"""
+
+# shared RAGPipeline instance
+_rag = RAGPipeline()
 
 def _download_and_ingest(paper, metadata: dict) -> int:
     """
@@ -25,7 +37,7 @@ def _download_and_ingest(paper, metadata: dict) -> int:
         with tempfile.TemporaryDirectory() as tmpdir:
             pdf_path = Path(tmpdir) / "paper.pdf"
 
-            # download PDF (set 30s time-out)
+            # download PDF (30s time-out)
             response = httpx.get(
                 paper.pdf_url,
                 follow_redirects=True,
@@ -43,20 +55,20 @@ def _download_and_ingest(paper, metadata: dict) -> int:
         return 0
 
 
-@tool # Register as a LangChain tool that can be called by the LLM
+@tool # Register as a LangChain tool
 def arxiv_search(query:str,max_results:int=3) -> str:
     """
     Search arXiv for academic papers on a topic.
     Use this to find relevant research papers and auto add them to the knowledge base.
 
     Args:
-        query: Research topic or keywords (in English)
+        query: Research keywords (in English)
         max_results: Number of papers to retrieve (default 3, max 5)
     """
 
     max_results = min(max_results, 5)
 
-    client = arxiv.Client() # create a client for interacting with the arxiv API
+    client = arxiv.Client() # client for interacting with arxiv API
 
     search = arxiv.Search(  # Define a search query for arXiv papers
         query = query,
@@ -64,7 +76,7 @@ def arxiv_search(query:str,max_results:int=3) -> str:
         sort_by = arxiv.SortCriterion.Relevance
     )
 
-    # return messages if it fails
+    # use client to send request of searching query
     try:
         results = list(client.results(search))
     except Exception as e:
@@ -75,6 +87,7 @@ def arxiv_search(query:str,max_results:int=3) -> str:
 
     summaries = []
 
+    # format paper's info
     for paper in results:
         paper_id = paper.entry_id.split("/")[-1] # # https://arxiv.org/abs/2401.12345 -> 2401.12345
         metadata = {
@@ -85,7 +98,6 @@ def arxiv_search(query:str,max_results:int=3) -> str:
         }
 
         # download PDF and add it to RAD knowledge base
-
         chunk_count = _download_and_ingest(paper, metadata)
 
         summaries.append(

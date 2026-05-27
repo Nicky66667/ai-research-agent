@@ -12,7 +12,7 @@ llm = ChatOpenAI(model=LLM_MODEL, temperature=0) # temperature controls randomne
 def decompose_query(state:AgentState) -> dict:
     """
     Node 1: Query Decomposition
-    Break down the user’s question into 3‑5 sub‑queries for higher efficiency.
+    Break down the user’s question into 3‑5 sub‑queries.
 
     User Query
         ↓

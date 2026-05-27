@@ -34,15 +34,15 @@ with st.sidebar:
 
     st.divider() # draw a separator line
 
-    st.header('How it works?')
+    st.header('instruction:')
     st.markdown("""
     1. Enter a research question
-    2. Agent decomposes it into sub-queries
-    3. Search arXiv 
+    2. Agent decomposes it into sub-queries for high efficiency
+    3. Search arXiv papers or relevant website
     4. Downloads papers
     5. Generates report
+    6. export as PDF, WORD or TXT(optional)
     """)
-    # Render an explanation of the agent's workflow
 
 # ------------Session state init-----------------
 
@@ -132,7 +132,7 @@ if prompt := st.chat_input("Enter your research question:"):
             # print the full traceback
 
 
-# ── Export area (only shown when a report exists) ──────────────────────────────
+# ── Export area (only shown when the report is generated) ──────────────────────────────
 
 if st.session_state.get("last_report"):
     st.divider()
@@ -167,8 +167,7 @@ if st.session_state.get("last_report"):
         )
     with col4:
         if st.button("✕ Skip"):
-            # User doesn't want a file — clear the report from session state
-            # so the export area disappears without downloading anything
+            # so the export area disappears after skip
             st.session_state.pop("last_report", None)
             st.session_state.pop("last_query", None)
             st.rerun()
