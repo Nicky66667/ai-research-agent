@@ -1,6 +1,6 @@
 # 🔬 AI Research Agent
 
-> Autonomous academic research assistant — input a question, get a structured report with citations.
+> Autonomous academic research assistant with easy use: input a question and output a structured report with citations.
 
 [![Live Demo](https://img.shields.io/badge/🤗-Live%20Demo-blue)](https://huggingface.co/spaces/YOUR_USERNAME/ai-research-agent)
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://www.python.org/)
@@ -81,11 +81,11 @@ Open `http://localhost:8501` in your browser.
 ```
 research-agent/
 ├── app.py                  # Streamlit UI
-├── main.py                 # CLI entry point (for testing without UI)
+├── main.py                 # CLI entry point (testing agent without UI)
 ├── agents/
-│   ├── graph.py            # LangGraph workflow definition
-│   ├── nodes.py            # Individual node functions
-│   └── state.py            # Shared state schema
+│   ├── graph.py            # LangGraph workflow 
+│   ├── nodes.py            # node functions
+│   └── state.py            # Shared state 
 ├── tools/
 │   ├── arxiv_tool.py       # arXiv search + PDF download
 │   ├── rag_tool.py         # RAG query tool (empty for now)
@@ -99,7 +99,10 @@ research-agent/
 │   ├── settings.py         # global variables and model config
 │   └── prompts.py          # System and task prompts
 └── tests/
-    ├── ...
+    ├── test_agent.py
+    ├── test_export.py  
+    ├── test_rag.py  
+    └── test_tools.py  
 ```
 ---
 
@@ -116,7 +119,6 @@ research-agent/
 | UI | Streamlit | Fast Python → web demo workflow                              |
 | Export | python-docx + reportlab | Pure Python, Docker-friendly    |
 ---
-
 
 ## Running Tests
 
