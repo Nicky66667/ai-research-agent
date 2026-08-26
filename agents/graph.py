@@ -4,14 +4,14 @@ from langgraph.graph import StateGraph, END
 # ToolNode: a ready-made node that auto runs tools
 from langgraph.prebuilt import ToolNode
 
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph_checkpoint_aws import DynamoDBSaver
 from .state import AgentState
 from .nodes import decompose_query, agent_node, report_generate, should_continue
 from tools import web_search, arxiv_search, rag_query
 
 TOOLS = [web_search, arxiv_search, rag_query]
 
-def build_graph(db_path:str="memory.db"):
+def build_graph():
     """
     Build LangGraph state graph.
 
@@ -21,8 +21,12 @@ def build_graph(db_path:str="memory.db"):
                 report → END
     """
 
-    # Create a checkpointer that saves state after each node
-    checkpointer = MemorySaver()
+    # Create a checkpointer backed by DynamoDB, so conversation state
+    # survives process restarts (unlike MemorySaver, which lives only in RAM).
+    checkpointer = DynamoDBSaver(
+        table_name="research-agent-checkpoints",
+        region_name="us-east-1",
+    )
 
     # Create the graph, AgentState is the shared data bag
     workflow = StateGraph(AgentState)
