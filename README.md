@@ -10,7 +10,6 @@
 ## Demo
 
 ![Demo GIF](src/demo.gif)
-<!-- Record a short screen capture of a full research run and save it as assets/demo.gif -->
 
 ---
 
@@ -117,7 +116,7 @@ research-agent/
 | PDF parsing | PyMuPDF | 
 | Web search | Tavily | 
 | UI | Streamlit | 
-| Export | python-docx + reportlab | 
+| Export | python-docx + reportlab |
 ---
 
 ## Running Tests

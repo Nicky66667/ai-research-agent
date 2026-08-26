@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path # handle filesystem path handling
 from langchain_core.tools import tool
 from rag.pipeline import RAGPipeline
+from utils import s3_store
 
 """
 dataflow for arXiv API:
@@ -21,38 +22,25 @@ dataflow for arXiv API:
 # shared RAGPipeline instance
 _rag = RAGPipeline()
 
-def _download_and_ingest(paper, metadata: dict) -> int:
-    """
-    download PDF and feed into RAG Pipleine, return number of new chunks added.
-    """
+def	_download_and_ingest(paper,	metadata:	dict)	->	int:
 
-    paper_id = paper.entry_id.split("/")[-1]
+	"""下载	PDF（优先从	S3	缓存读取）并送入	RAG	Pipeline，返回新增	chunk	数。"""
+	arxiv_id	=	metadata["source_id"]
+	if	arxiv_id	in	_rag.loaded_ids:
+		return	0		#	本次会话已加载，跳过
+	if	s3_store.exists_in_s3(arxiv_id):
+		#	命中缓存：之前处理过这篇论文，直接从	S3	拿，不用再打	arXiv
+		pdf_bytes	=	s3_store.download_pdf(arxiv_id)
+	else:
+		#	没缓存：从	arXiv	下载，然后顺手存一份到	S3
+		response = httpx.get(paper.pdf_url,	follow_redirects=True,	timeout=30)
+		pdf_bytes =	response.content
+		s3_store.upload_pdf(arxiv_id,	pdf_bytes)
+	with tempfile.TemporaryDirectory()	as	tmpdir:
+		pdf_path =	Path(tmpdir)	/	"paper.pdf"
+		pdf_path.write_bytes(pdf_bytes)
+		return _rag.add_pdf(str(pdf_path),	metadata)
 
-    # skip already downloaded files
-    if f"arxiv:{paper_id}" in _rag.loaded_ids:
-        return 0
-
-    try:
-        # use temp dir to store PDFs, auto-clean after function returns
-        with tempfile.TemporaryDirectory() as tmpdir:
-            pdf_path = Path(tmpdir) / "paper.pdf"
-
-            # download PDF (30s time-out)
-            response = httpx.get(
-                paper.pdf_url,
-                follow_redirects=True,
-                timeout=30
-            )
-
-            response.raise_for_status() # if status code is not 200, raise exception
-            pdf_path.write_bytes(response.content) # write downloaded binary PDF content to file
-
-            return _rag.add_pdf(str(pdf_path), metadata) # Process PDF: parse, chunk, embed, write to vector DB, return chunk count.
-
-    # print error log
-    except Exception as e:
-        print(f"[arxiv_tool] Failed to download {paper.title}:{e}")
-        return 0
 
 
 @tool # Register as a LangChain tool
